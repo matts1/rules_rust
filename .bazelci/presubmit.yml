@@ -186,6 +186,17 @@ tasks:
     test_targets: *default_windows_targets
     soft_fail: yes
     bazel: "rolling"
+  ubuntu2004_bzlmod_only:
+    name: With bzlmod
+    platform: ubuntu2004
+    # See https://bazel.build/external/migration#migration-process
+    # When WORKSPACE.bzlmod is provided, the workspace file is ignored.
+    shell_commands:
+      - "touch WORKSPACE.bzlmod"
+    build_flags:
+      - "--enable_bzlmod"
+    build_targets:
+      - "//tools/runfiles"
   ubuntu2004_clang:
     name: With Clang
     platform: ubuntu2004
