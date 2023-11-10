@@ -3,11 +3,12 @@
 load("//proto/prost:repositories.bzl", _rust_prost_dependencies = "rust_prost_dependencies")
 load("//proto/prost/private/3rdparty/crates:crates.bzl", "crate_repositories")
 
-def rust_prost_dependencies():
+def rust_prost_dependencies(bzlmod = False):
     """Prost repository dependencies."""
-    crate_repositories()
+    direct_deps = crate_repositories()
 
-    _rust_prost_dependencies()
+    direct_deps.extend(_rust_prost_dependencies(bzlmod = bzlmod))
+    return direct_deps
 
 # buildifier: disable=unnamed-macro
 def rust_prost_register_toolchains(register_toolchains = True):

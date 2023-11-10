@@ -196,7 +196,12 @@ tasks:
     build_flags:
       - "--enable_bzlmod"
     build_targets:
+      - "//bindgen/3rdparty:bindgen"
+      - "//crate_universe:cargo_bazel_bin"
+      - "//proto/prost/private:prost_runtime"
       - "//tools/runfiles"
+      - "//util/import"
+      - "//wasm_bindgen/3rdparty:wasm_bindgen"
   ubuntu2004_clang:
     name: With Clang
     platform: ubuntu2004
