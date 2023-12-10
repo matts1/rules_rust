@@ -1750,6 +1750,11 @@ rust_bindgen_dependencies()
 Declare dependencies needed for bindgen.
 
 
+**RETURNS**
+
+list[struct(repo=str, is_dev_dep=bool)]: A list of the repositories
+  defined by this macro.
+
 
 <a id="rust_bindgen_library"></a>
 
@@ -1803,11 +1808,22 @@ Registers the default toolchains for the `rules_rust` [bindgen][bg] rules.
 ## rust_prost_dependencies
 
 <pre>
-rust_prost_dependencies()
+rust_prost_dependencies(<a href="#rust_prost_dependencies-bzlmod">bzlmod</a>)
 </pre>
 
+Declares repositories needed for prost.
+
+**PARAMETERS**
 
 
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="rust_prost_dependencies-bzlmod"></a>bzlmod |  Whether bzlmod is enabled.   |  `False` |
+
+**RETURNS**
+
+list[struct(repo=str, is_dev_dep=bool)]: A list of the repositories
+  defined by this macro.
 
 
 <a id="rust_prost_library"></a>
@@ -2118,6 +2134,12 @@ Declare dependencies needed for the `rules_rust` [wasm-bindgen][wb] rules.
 
 [wb]: https://github.com/rustwasm/wasm-bindgen
 
+
+
+**RETURNS**
+
+list[struct(repo=str, is_dev_dep=bool)]: A list of the repositories
+  defined by this macro.
 
 
 <a id="rust_wasm_bindgen_register_toolchains"></a>

@@ -738,6 +738,11 @@ Define dependencies of the `cargo-bazel` Rust target
 | <a id="crate_universe_dependencies-bootstrap"></a>bootstrap |  If true, a <code>cargo_bootstrap_repository</code> target will be generated.   |  `False` |
 | <a id="crate_universe_dependencies-kwargs"></a>kwargs |  Arguments to pass through to cargo_bazel_bootstrap.   |  none |
 
+**RETURNS**
+
+list[struct(repo=str, is_dev_dep=bool)]: A list of the repositories
+  defined by this macro.
+
 
 <a id="render_config"></a>
 
