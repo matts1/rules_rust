@@ -15,7 +15,7 @@ def _internal_deps_impl(module_ctx):
     # repositories.
 
     # We don't want rules_rust_dependencies, as they contain things like
-    # rules_cc, which is contained in the BCR.
+    # rules_cc, which is already declared in MODULE.bazel.
     direct_deps = [struct(repo = "rules_rust_tinyjson", is_dev_dep = False)]
     http_archive(**TINYJSON_KWARGS)
 
