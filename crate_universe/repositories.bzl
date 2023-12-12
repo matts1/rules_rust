@@ -17,7 +17,7 @@ def crate_universe_dependencies(rust_version = rust_common.default_version, boot
     """
     third_party_deps()
 
-    if bootstrap:
+    if bootstrap != False:
         cargo_bazel_bootstrap(rust_version = rust_version, **kwargs)
 
     _vendor_crate_repositories()
