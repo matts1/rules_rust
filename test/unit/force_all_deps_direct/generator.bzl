@@ -6,21 +6,21 @@ load("//rust/private:providers.bzl", "BuildInfo", "CrateInfo", "DepInfo", "DepVa
 # buildifier: disable=bzl-visibility
 load("//rust/private:rustc.bzl", "rustc_compile_action")
 
-def _generator_impl(ctx):
-    rs_file = ctx.actions.declare_file(ctx.label.name + "_generated.rs")
-    ctx.actions.run_shell(
-        outputs = [rs_file],
-        command = """cat <<EOF > {}
+_TEMPLATE = """\
 use direct::direct_fn;
 use transitive::transitive_fn;
 
-pub fn call_both() {}
+pub fn call_both() {
     direct_fn();
     transitive_fn();
-{}
-EOF
-""".format(rs_file.path, "{", "}"),
-        mnemonic = "WriteRsFile",
+}
+"""
+
+def _generator_impl(ctx):
+    rs_file = ctx.actions.declare_file(ctx.label.name + "_generated.rs")
+    ctx.actions.write(
+        output = rs_file,
+        content = _TEMPLATE,
     )
 
     toolchain = ctx.toolchains[Label("//rust:toolchain_type")]
@@ -63,7 +63,6 @@ EOF
             compile_data = depset([]),
             compile_data_targets = depset([]),
             rustc_env = {},
-            _rustc_env_attr = {},
             is_test = False,
         ),
         output_hash = output_hash,
@@ -73,7 +72,10 @@ EOF
 generator = rule(
     implementation = _generator_impl,
     attrs = {
-        "deps": attr.label_list(),
+        "deps": attr.label_list(
+            doc = "List of other libraries to be linked to this library target.",
+            providers = [CrateInfo],
+        ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
@@ -91,6 +93,5 @@ generator = rule(
         "@rules_rust//rust:toolchain_type",
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
-    incompatible_use_toolchain_transition = True,
     fragments = ["cpp"],
 )

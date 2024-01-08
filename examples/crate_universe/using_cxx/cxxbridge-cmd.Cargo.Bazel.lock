@@ -1,5 +1,5 @@
 {
-  "checksum": "2ac40591dc369d36ba80a6f16cd22421662cd96937636813a59af18726b8ad2c",
+  "checksum": "3b8a2a4548ac651396437773894ec4dd2b8f3149a77d3ea1287fce6854664b4a",
   "crates": {
     "anstyle 1.0.1": {
       "name": "anstyle",
@@ -808,6 +808,12 @@
     "aarch64-unknown-linux-gnu": [
       "aarch64-unknown-linux-gnu"
     ],
+    "aarch64-unknown-nixos-gnu": [
+      "aarch64-unknown-nixos-gnu"
+    ],
+    "aarch64-unknown-nto-qnx710": [
+      "aarch64-unknown-nto-qnx710"
+    ],
     "arm-unknown-linux-gnueabi": [
       "arm-unknown-linux-gnueabi"
     ],
@@ -884,8 +890,19 @@
     "x86_64-unknown-linux-gnu": [
       "x86_64-unknown-linux-gnu"
     ],
+    "x86_64-unknown-nixos-gnu": [
+      "x86_64-unknown-nixos-gnu"
+    ],
     "x86_64-unknown-none": [
       "x86_64-unknown-none"
     ]
-  }
+  },
+  "direct_deps": [
+    "clap 4.3.21",
+    "codespan-reporting 0.11.1",
+    "proc-macro2 1.0.66",
+    "quote 1.0.32",
+    "syn 2.0.28"
+  ],
+  "direct_dev_deps": []
 }

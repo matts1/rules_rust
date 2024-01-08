@@ -23,7 +23,7 @@ load(
     "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
 )
 load("//rust/private:common.bzl", "rust_common")
-load("//rust/private:providers.bzl", _BuildInfo = "BuildInfo")
+load("//rust/private:providers.bzl", "RustcOutputDiagnosticsInfo", _BuildInfo = "BuildInfo")
 load("//rust/private:stamp.bzl", "is_stamping_enabled")
 load(
     "//rust/private:utils.bzl",
@@ -320,7 +320,8 @@ def collect_deps(
                      "only one is allowed in the dependencies")
             build_info = dep_build_info
             transitive_build_infos.append(depset([build_info]))
-            transitive_link_search_paths.append(depset([build_info.link_search_paths]))
+            if build_info.link_search_paths:
+                transitive_link_search_paths.append(depset([build_info.link_search_paths]))
         else:
             fail("rust targets can only depend on rust_library, rust_*_library or cc_library " +
                  "targets.")
@@ -698,9 +699,16 @@ def collect_inputs(
     if _depend_on_metadata(crate_info, force_depend_on_objects):
         transitive_crate_outputs = dep_info.transitive_metadata_outputs
 
+    build_info_inputs = []
+    if build_info:
+        if build_info.rustc_env:
+            build_info_inputs.append(build_info.rustc_env)
+        if build_info.flags:
+            build_info_inputs.append(build_info.flags)
+
     nolinkstamp_compile_inputs = depset(
         getattr(files, "data", []) +
-        ([build_info.rustc_env, build_info.flags] if build_info else []) +
+        build_info_inputs +
         ([toolchain.target_json] if toolchain.target_json else []) +
         ([] if linker_script == None else [linker_script]),
         transitive = [
@@ -929,6 +937,10 @@ def construct_arguments(
     if build_metadata:
         # Configure process_wrapper to terminate rustc when metadata are emitted
         process_wrapper_flags.add("--rustc-quit-on-rmeta", "true")
+        if crate_info.rustc_rmeta_output:
+            process_wrapper_flags.add("--output-file", crate_info.rustc_rmeta_output.path)
+    elif crate_info.rustc_output:
+        process_wrapper_flags.add("--output-file", crate_info.rustc_output.path)
 
     rustc_flags.add(error_format, format = "--error-format=%s")
 
@@ -1034,12 +1046,14 @@ def construct_arguments(
     else:
         env.update(expand_dict_value_locations(
             ctx,
-            crate_info._rustc_env_attr,
+            crate_info.rustc_env,
             data_paths,
         ))
 
     # Ensure the sysroot is set for the target platform
     env["SYSROOT"] = toolchain.sysroot
+    if toolchain._experimental_toolchain_generated_sysroot:
+        rustc_flags.add(toolchain.sysroot, format = "--sysroot=%s")
 
     if toolchain._rename_first_party_crates:
         env["RULES_RUST_THIRD_PARTY_DIR"] = toolchain._third_party_dir
@@ -1110,9 +1124,9 @@ def rustc_compile_action(
     """
     crate_info = rust_common.create_crate_info(**crate_info_dict)
 
-    build_metadata = None
-    if "metadata" in crate_info_dict:
-        build_metadata = crate_info_dict["metadata"]
+    build_metadata = crate_info_dict.get("metadata", None)
+    rustc_output = crate_info_dict.get("rustc_output", None)
+    rustc_rmeta_output = crate_info_dict.get("rustc_rmeta_output", None)
 
     cc_toolchain, feature_configuration = find_cc_toolchain(ctx)
 
@@ -1191,7 +1205,7 @@ def rustc_compile_action(
         build_flags_files = build_flags_files,
         force_all_deps_direct = force_all_deps_direct,
         stamp = stamp,
-        use_json_output = bool(build_metadata),
+        use_json_output = bool(build_metadata) or bool(rustc_output) or bool(rustc_rmeta_output),
         skip_expanding_rustc_env = skip_expanding_rustc_env,
     )
 
@@ -1254,6 +1268,8 @@ def rustc_compile_action(
 
     # The action might generate extra output that we don't want to include in the `DefaultInfo` files.
     action_outputs = list(outputs)
+    if rustc_output:
+        action_outputs.append(rustc_output)
 
     # Rustc generates a pdb file (on Windows) or a dsym folder (on macos) so provide it in an output group for crate
     # types that benefit from having debug information in a separate file.
@@ -1288,7 +1304,7 @@ def rustc_compile_action(
             ctx.actions.run(
                 executable = ctx.executable._process_wrapper,
                 inputs = compile_inputs,
-                outputs = [build_metadata],
+                outputs = [build_metadata] + [x for x in [rustc_rmeta_output] if x],
                 env = env,
                 arguments = args_metadata.all,
                 mnemonic = "RustcMetadata",
@@ -1300,16 +1316,16 @@ def rustc_compile_action(
                 ),
                 toolchain = "@rules_rust//rust:toolchain_type",
             )
-    else:
+    elif hasattr(ctx.executable, "_bootstrap_process_wrapper"):
         # Run without process_wrapper
         if build_env_files or build_flags_files or stamp or build_metadata:
             fail("build_env_files, build_flags_files, stamp, build_metadata are not supported when building without process_wrapper")
         ctx.actions.run(
-            executable = toolchain.rustc,
+            executable = ctx.executable._bootstrap_process_wrapper,
             inputs = compile_inputs,
             outputs = action_outputs,
             env = env,
-            arguments = [args.rustc_flags],
+            arguments = [args.rustc_path, args.rustc_flags],
             mnemonic = "Rustc",
             progress_message = "Compiling Rust (without process_wrapper) {} {}{} ({} files)".format(
                 crate_info.type,
@@ -1319,6 +1335,8 @@ def rustc_compile_action(
             ),
             toolchain = "@rules_rust//rust:toolchain_type",
         )
+    else:
+        fail("No process wrapper was defined for {}".format(ctx.label))
 
     if experimental_use_cc_common_link:
         # Wrap the main `.o` file into a compilation output suitable for
@@ -1450,14 +1468,25 @@ def rustc_compile_action(
     else:
         providers.extend([crate_info, dep_info])
 
-    if toolchain.target_arch != "wasm32":
-        providers += establish_cc_info(ctx, attr, crate_info, toolchain, cc_toolchain, feature_configuration, interface_library)
+    providers += establish_cc_info(ctx, attr, crate_info, toolchain, cc_toolchain, feature_configuration, interface_library)
+
+    output_group_info = {}
+
     if pdb_file:
-        providers.append(OutputGroupInfo(pdb_file = depset([pdb_file])))
+        output_group_info["pdb_file"] = depset([pdb_file])
     if dsym_folder:
-        providers.append(OutputGroupInfo(dsym_folder = depset([dsym_folder])))
+        output_group_info["dsym_folder"] = depset([dsym_folder])
     if build_metadata:
-        providers.append(OutputGroupInfo(build_metadata = depset([build_metadata])))
+        output_group_info["build_metadata"] = depset([build_metadata])
+    if build_metadata:
+        output_group_info["build_metadata"] = depset([build_metadata])
+        if rustc_rmeta_output:
+            output_group_info["rustc_rmeta_output"] = depset([rustc_rmeta_output])
+    if rustc_output:
+        output_group_info["rustc_output"] = depset([rustc_output])
+
+    if output_group_info:
+        providers.append(OutputGroupInfo(**output_group_info))
 
     return providers
 
@@ -1624,6 +1653,7 @@ def _create_extra_input_args(build_info, dep_info):
             - (depset[File]): All direct and transitive build flag files from the current build info.
     """
     input_files = []
+    input_depsets = []
 
     # Arguments to the commandline line wrapper that are going to be used
     # to create the final command line
@@ -1632,15 +1662,19 @@ def _create_extra_input_args(build_info, dep_info):
     build_flags_files = []
 
     if build_info:
-        out_dir = build_info.out_dir.path
+        if build_info.out_dir:
+            out_dir = build_info.out_dir.path
+            input_files.append(build_info.out_dir)
         build_env_file = build_info.rustc_env
-        build_flags_files.append(build_info.flags)
-        build_flags_files.append(build_info.link_flags)
-        input_files.append(build_info.out_dir)
-        input_files.append(build_info.link_flags)
+        if build_info.flags:
+            build_flags_files.append(build_info.flags)
+        if build_info.link_flags:
+            build_flags_files.append(build_info.link_flags)
+            input_files.append(build_info.link_flags)
+        input_depsets.append(build_info.compile_data)
 
     return (
-        depset(input_files, transitive = [dep_info.link_search_path_files]),
+        depset(input_files, transitive = [dep_info.link_search_path_files] + input_depsets),
         out_dir,
         build_env_file,
         depset(build_flags_files, transitive = [dep_info.link_search_path_files]),
@@ -1677,7 +1711,7 @@ def _compute_rpaths(toolchain, output_dir, dep_info, use_pic):
     # without a version of Bazel that includes
     # https://github.com/bazelbuild/bazel/pull/13427. This is known to not be
     # included in Bazel 4.1 and below.
-    if toolchain.target_os != "linux" and toolchain.target_os != "darwin":
+    if toolchain.target_os not in ["linux", "darwin", "android"]:
         fail("Runtime linking is not supported on {}, but found {}".format(
             toolchain.target_os,
             dep_info.transitive_noncrates,
@@ -2040,6 +2074,31 @@ error_format = rule(
     ),
     implementation = _error_format_impl,
     build_setting = config.string(flag = True),
+)
+
+def _rustc_output_diagnostics_impl(ctx):
+    """Implementation of the `rustc_output_diagnostics` rule
+
+    Args:
+        ctx (ctx): The rule's context object
+
+    Returns:
+        list: A list containing the RustcOutputDiagnosticsInfo provider
+    """
+    return [RustcOutputDiagnosticsInfo(
+        rustc_output_diagnostics = ctx.build_setting_value,
+    )]
+
+rustc_output_diagnostics = rule(
+    doc = (
+        "Setting this flag from the command line with `--@rules_rust//:rustc_output_diagnostics` " +
+        "makes rules_rust save rustc json output(suitable for consumption by rust-analyzer) in a file. " +
+        "These are accessible via the " +
+        "`rustc_rmeta_output`(for pipelined compilation) and `rustc_output` output groups. " +
+        "You can find these using `bazel cquery`"
+    ),
+    implementation = _rustc_output_diagnostics_impl,
+    build_setting = config.bool(flag = True),
 )
 
 def _extra_rustc_flags_impl(ctx):

@@ -47,7 +47,6 @@ def _with_modified_crate_name_impl(ctx):
             compile_data = depset([]),
             compile_data_targets = depset([]),
             rustc_env = {},
-            _rustc_env_attr = {},
             is_test = False,
         ),
         output_hash = output_hash,
@@ -77,6 +76,5 @@ with_modified_crate_name = rule(
         "@rules_rust//rust:toolchain_type",
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
-    incompatible_use_toolchain_transition = True,
     fragments = ["cpp"],
 )

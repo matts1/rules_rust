@@ -73,7 +73,6 @@ EOF
             compile_data = depset([]),
             compile_data_targets = depset([]),
             rustc_env = {},
-            _rustc_env_attr = {},
             is_test = False,
         ),
         output_hash = output_hash,
@@ -99,6 +98,5 @@ wrap = rule(
         ),
     },
     toolchains = ["@rules_rust//rust:toolchain", "@bazel_tools//tools/cpp:toolchain_type"],
-    incompatible_use_toolchain_transition = True,
     fragments = ["cpp"],
 )

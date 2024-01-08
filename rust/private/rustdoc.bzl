@@ -39,7 +39,6 @@ def _strip_crate_info_output(crate_info):
         output = None,
         metadata = None,
         edition = crate_info.edition,
-        _rustc_env_attr = crate_info._rustc_env_attr,
         rustc_env = crate_info.rustc_env,
         rustc_env_files = crate_info.rustc_env_files,
         is_test = crate_info.is_test,
@@ -137,10 +136,6 @@ def rustdoc_compile_action(
             env.update({"SYSROOT": "${{pwd}}/{}".format(toolchain.sysroot_short_path)})
         if "OUT_DIR" in env:
             env.update({"OUT_DIR": "${{pwd}}/{}".format(build_info.out_dir.short_path)})
-
-        # `rustdoc` does not support the SYSROOT environment variable. To account
-        # for this, the flag must be explicitly passed to the `rustdoc` binary.
-        args.rustc_flags.add(toolchain.sysroot_short_path, format = "--sysroot=${{pwd}}/%s")
 
     return struct(
         executable = ctx.executable._process_wrapper,
@@ -349,5 +344,4 @@ rust_doc = rule(
         str(Label("//rust:toolchain_type")),
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
-    incompatible_use_toolchain_transition = True,
 )

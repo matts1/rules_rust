@@ -16,7 +16,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", find_rules_cc_toolchain = "find_cpp_toolchain")
-load(":providers.bzl", "BuildInfo", "CrateGroupInfo", "CrateInfo", "DepInfo", "DepVariantInfo")
+load(":providers.bzl", "BuildInfo", "CrateGroupInfo", "CrateInfo", "DepInfo", "DepVariantInfo", "RustcOutputDiagnosticsInfo")
 
 UNSUPPORTED_FEATURES = [
     "thin_lto",
@@ -457,7 +457,7 @@ def is_exec_configuration(ctx):
     """
 
     # TODO(djmarcin): Is there any better way to determine cfg=exec?
-    return ctx.genfiles_dir.path.find("-exec-") != -1
+    return ctx.genfiles_dir.path.find("-exec") != -1
 
 def transform_deps(deps):
     """Transforms a [Target] into [DepVariantInfo].
@@ -707,7 +707,7 @@ def crate_root_src(name, srcs, crate_type):
     )
     if not crate_root:
         file_names = [default_crate_root_filename, name + ".rs"]
-        fail("No {} source file found.".format(" or ".join(file_names)), "srcs")
+        fail("Couldn't find {} among `srcs`, please use `crate_root` to specify the root file.".format(" or ".join(file_names)))
     return crate_root
 
 def _shortest_src_with_basename(srcs, basename):
@@ -849,3 +849,29 @@ def _symlink_for_non_generated_source(ctx, src_file, package_root):
         return src_symlink
     else:
         return src_file
+
+def generate_output_diagnostics(ctx, sibling, require_process_wrapper = True):
+    """Generates a .rustc-output file if it's required.
+
+    Args:
+        ctx: (ctx): The current rule's context object
+        sibling: (File): The file to generate the diagnostics for.
+        require_process_wrapper: (bool): Whether to require the process wrapper
+          in order to generate the .rustc-output file.
+    Returns:
+        Optional[File] The .rustc-object file, if generated.
+    """
+
+    # Since this feature requires error_format=json, we usually need
+    # process_wrapper, since it can write the json here, then convert it to the
+    # regular error format so the user can see the error properly.
+    if require_process_wrapper and not ctx.attr._process_wrapper:
+        return None
+    provider = ctx.attr._rustc_output_diagnostics[RustcOutputDiagnosticsInfo]
+    if not provider.rustc_output_diagnostics:
+        return None
+
+    return ctx.actions.declare_file(
+        sibling.basename + ".rustc-output",
+        sibling = sibling,
+    )
