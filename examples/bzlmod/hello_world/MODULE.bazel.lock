@@ -1,6 +1,6 @@
 {
   "lockFileVersion": 6,
-  "moduleFileHash": "97fc4632c12fa1c1dc76d29301d11258c4d118d7080c0caf767b093b05361be0",
+  "moduleFileHash": "626730f6bfed207274c0f53502d56fd955e96d92ecd46b177e51164bd7c88cca",
   "flags": {
     "cmdRegistries": [
       "https://bcr.bazel.build/"
@@ -13,7 +13,7 @@
     "compatibilityMode": "ERROR"
   },
   "localOverrideHashes": {
-    "rules_rust": "b01d8fa2d0cadc2b4b427e5008dfef525aa9e17ddb781848b17f0af39e09c076",
+    "rules_rust": "87746193d9d8812a75923cc19772c2bb61b1ff870adfe6a70863a2df47188864",
     "bazel_tools": "1ae69322ac3823527337acf02016e8ee95813d8d356f47060255b8956fa642f0"
   },
   "moduleDepGraph": {
@@ -23,47 +23,15 @@
       "key": "<root>",
       "repoName": "hello_world_example",
       "executionPlatformsToRegister": [],
-      "toolchainsToRegister": [
-        "@rust_toolchains//:all"
-      ],
+      "toolchainsToRegister": [],
       "extensionUsages": [
-        {
-          "extensionBzlFile": "@rules_rust//rust:extensions.bzl",
-          "extensionName": "rust",
-          "usingModule": "<root>",
-          "location": {
-            "file": "@@//:MODULE.bazel",
-            "line": 22,
-            "column": 21
-          },
-          "imports": {
-            "rust_toolchains": "rust_toolchains"
-          },
-          "devImports": [],
-          "tags": [
-            {
-              "tagName": "toolchain",
-              "attributeValues": {
-                "edition": "2021"
-              },
-              "devDependency": false,
-              "location": {
-                "file": "@@//:MODULE.bazel",
-                "line": 23,
-                "column": 15
-              }
-            }
-          ],
-          "hasDevUseExtension": false,
-          "hasNonDevUseExtension": true
-        },
         {
           "extensionBzlFile": "@rules_rust//crate_universe:extension.bzl",
           "extensionName": "crate",
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 34,
+            "line": 25,
             "column": 22
           },
           "imports": {
@@ -83,7 +51,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 38,
+                "line": 29,
                 "column": 17
               }
             },
@@ -103,7 +71,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 44,
+                "line": 35,
                 "column": 17
               }
             }
@@ -117,7 +85,7 @@
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 57,
+            "line": 48,
             "column": 35
           },
           "imports": {
@@ -196,12 +164,15 @@
     },
     "rules_rust@_": {
       "name": "rules_rust",
-      "version": "0.42.0",
+      "version": "0.42.1",
       "key": "rules_rust@_",
       "repoName": "rules_rust",
       "executionPlatformsToRegister": [],
       "toolchainsToRegister": [
-        "@rust_toolchains//:all"
+        "@rust_toolchains//:all",
+        "//proto/protobuf:default-proto-toolchain",
+        "//proto/prost:default_prost_toolchain",
+        "//bindgen:default_bindgen_toolchain"
       ],
       "extensionUsages": [
         {
@@ -350,7 +321,7 @@
           "usingModule": "rules_rust@_",
           "location": {
             "file": "@@rules_rust~//:MODULE.bazel",
-            "line": 176,
+            "line": 173,
             "column": 32
           },
           "imports": {
@@ -367,7 +338,7 @@
           "usingModule": "rules_rust@_",
           "location": {
             "file": "@@rules_rust~//:MODULE.bazel",
-            "line": 179,
+            "line": 176,
             "column": 38
           },
           "imports": {
@@ -2159,7 +2130,7 @@
     },
     "@@rules_rust~//rust:extensions.bzl%rust": {
       "general": {
-        "bzlTransitiveDigest": "fc5384f0cxBOMkpjo3iXF+BV2bz6qjpFTzUqS8we/JM=",
+        "bzlTransitiveDigest": "kaZnVIQi/tGg5Je230Rp7u/785j3/IFhhQPVChEJd6A=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},

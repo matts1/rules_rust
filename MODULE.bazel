@@ -160,17 +160,14 @@ register_toolchains(
 
 register_toolchains(
     "//proto/protobuf:default-proto-toolchain",
-    dev_dependency = True,
 )
 
 register_toolchains(
     "//proto/prost:default_prost_toolchain",
-    dev_dependency = True,
 )
 
 register_toolchains(
     "//bindgen:default_bindgen_toolchain",
-    dev_dependency = True,
 )
 
 rust_host_tools = use_extension("//rust:extensions.bzl", "rust_host_tools")
