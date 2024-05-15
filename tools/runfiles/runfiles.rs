@@ -44,7 +44,7 @@ const TEST_SRCDIR_ENV_VAR: &str = "TEST_SRCDIR";
 
 #[macro_export]
 macro_rules! rlocation {
-    ($r:ident, $path:expr) => {
+    ($r:expr, $path:expr) => {
         $r.rlocation_from($path, env!("REPOSITORY_NAME"))
     };
 }
